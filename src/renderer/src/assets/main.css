@@ -1,0 +1,19 @@
+@import './base.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+}
+
+#app {
+}
+
+/* 添加一个全局样式，在拖拽时禁止用户选择页面上的文本 */
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
