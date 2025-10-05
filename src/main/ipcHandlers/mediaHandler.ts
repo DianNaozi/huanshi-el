@@ -1,14 +1,18 @@
 // src/main/ipcHandlers/mediaHandler.ts
-import { ipcMain, dialog } from 'electron'
-import { processMediaFile } from '../services/mediaService'
+import { BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent } from 'electron'
+import { getAllMedia, processMediaFile } from '../services/mediaService'
 import fs from 'fs/promises'
 import path from 'path'
 
 export function registerMediaHandlers(): void {
   // 处理单个文件上传
-  ipcMain.handle('open-file', async () => {
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      properties: ['openFile'],
+  ipcMain.handle('open-file', async (event: IpcMainInvokeEvent) => {
+    // 弹出框置顶
+    const win: Electron.BrowserWindow | null = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      properties: ['openFile', 'multiSelections'],
       filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }]
     })
 
@@ -16,6 +20,8 @@ export function registerMediaHandlers(): void {
       return null
     }
 
+    // The 'await' here is not strictly necessary, as async functions
+    // automatically handle returned promises, but it's fine to leave it.
     return await processMediaFile(filePaths[0])
   })
 
@@ -46,5 +52,29 @@ export function registerMediaHandlers(): void {
     const successfulResults = allResults.filter((result) => result !== null)
 
     return successfulResults
+  })
+
+  // 处理拖拽上传的文件
+  ipcMain.handle('upload-dropped-files', async (_event, filePaths: string[]) => {
+    console.log(filePaths)
+    if (!filePaths || filePaths.length === 0) {
+      return []
+    }
+
+    const results = []
+    for (const filePath of filePaths) {
+      // 复用我们强大的 processMediaFile 函数
+      const result = await processMediaFile(filePath)
+      if (result) {
+        results.push(result)
+      }
+    }
+    return results
+  })
+
+  // TODO 分页
+  // 获取所有媒体文件
+  ipcMain.handle('get-all-media', async () => {
+    return await getAllMedia()
   })
 }

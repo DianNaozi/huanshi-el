@@ -28,7 +28,9 @@ declare global {
     api: {
       openFile: () => Promise<ImportedMediaFile | null>
       openDirectory: () => Promise<ImportedMediaFile[]>
-      // 如果未来有更多 API，继续在这里添加
+      uploadDroppedFiles: (filePaths: FileList) => Promise<ImportedMediaFile[]>
+      getDragFilePath: (file) => Promise<string> // 获取拖拽文件路径
+      getAllMedia: () => Promise<ImportedMediaFile[]>
     }
   }
 }

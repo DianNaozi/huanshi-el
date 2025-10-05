@@ -62,13 +62,12 @@
           class="group relative cursor-pointer overflow-hidden rounded-lg"
         >
           <el-image
-            :src="item.url"
+            :src="`local://` + encodeURIComponent(item.thumbnailUrl)"
             fit="cover"
             class="aspect-[4/3] w-full transition-transform duration-300 group-hover:scale-105"
             lazy
             :initial-index="index"
             :preview-src-list="previewList"
-            hide-on-click-modal
           >
             <template #placeholder>
               <div class="w-full h-full bg-gray-100 dark:bg-gray-800"></div>
@@ -81,9 +80,6 @@
             <el-tooltip content="查看" placement="top">
               <el-button circle :icon="View" class="action-btn" />
             </el-tooltip>
-            <el-tooltip content="下载" placement="top">
-              <el-button circle :icon="Download" class="action-btn" />
-            </el-tooltip>
           </div>
         </div>
       </div>
@@ -92,8 +88,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Grid, Memo, ArrowDown, View, Download } from '@element-plus/icons-vue'
+import { ImportedMediaFile } from '@renderer/env'
 
 // 筛选类型的数据绑定
 const filterType = ref('all')
@@ -107,16 +104,29 @@ const filterOptions = [
 const viewMode = ref('grid')
 
 // 模拟媒体数据列表
-const mediaList = ref(
-  Array.from({ length: 35 }, (_, i) => ({
-    id: i + 1,
-    name: `风景照片 ${i + 1}.jpg`,
-    url: `https://picsum.photos/seed/${i + 1}/800/600`
-  }))
-)
+const mediaList = ref<ImportedMediaFile[]>()
 
 // 计算属性: 为 el-image 的预览功能生成所有图片的 URL 列表
 const previewList = computed(() => mediaList.value.map((item) => item.url))
+
+/**
+ * 从主进程获取所有媒体数据
+ */
+const fetchMediaList = async () => {
+  // TODO 添加加载状态
+  try {
+    const data: ImportedMediaFile[] = await window.api.getAllMedia()
+    mediaList.value = data
+    console.log(data, '获取的数据')
+  } catch (error) {
+    console.error('获取媒体数据失败:', error)
+  } finally {
+  }
+}
+
+onMounted(() => {
+  fetchMediaList()
+})
 </script>
 
 <style scoped>

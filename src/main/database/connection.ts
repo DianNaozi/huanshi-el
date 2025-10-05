@@ -20,7 +20,29 @@ const dialect = new SqliteDialect({
 // 创建并导出 Kysely 实例，整个应用将通过它来操作数据库
 // <DB> 泛型参数确保了所有操作都是类型安全的
 export const db = new Kysely<DB>({
-  dialect
+  dialect,
+  // log(event) {
+  //   // 只在非生产环境下打印日志
+  //   // electron-vite 会自动为你设置好 process.env.NODE_ENV
+  //   if (process.env.NODE_ENV !== 'production') {
+  //     // event.level 可以是 'query' 或 'error'
+  //     if (event.level === 'query') {
+  //       console.log('--- Kysely Query ---')
+  //       // event.query.sql 是带有占位符 (?) 的 SQL 语句
+  //       console.log('SQL:', event.query.sql)
+  //       // event.query.parameters 是实际绑定的参数数组
+  //       console.log('Params:', event.query.parameters)
+  //       // event.queryDurationMillis 是查询耗时（毫秒）
+  //       console.log('Duration:', `${event.queryDurationMillis.toFixed(2)} ms`)
+  //       console.log('--------------------')
+  //     }
+  //     if (event.level === 'error') {
+  //       console.error('--- Kysely Error ---')
+  //       console.error(event.error)
+  //       console.error('--------------------')
+  //     }
+  //   }
+  // }
 })
 
 // 数据库初始化函数
@@ -50,5 +72,5 @@ export function initializeDatabase(): void {
 `
   // 直接使用 better-sqlite3 实例来执行初始化的 SQL
   sqlite.exec(createMediaTableSQL)
-  console.log('Database initialized successfully.')
+  console.log('数据库初始化成功.')
 }

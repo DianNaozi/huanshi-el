@@ -1,15 +1,34 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
   openFile: () => ipcRenderer.invoke('open-file'),
-  openDirectory: () => ipcRenderer.invoke('open-directory')
+
+  openDirectory: () => ipcRenderer.invoke('open-directory'),
+
+  uploadDroppedFiles: (files) => {
+    const filePaths: string[] = []
+    const keys = Object.keys(files)
+    keys.forEach((key) => {
+      const file = files[key]
+      const path = webUtils.getPathForFile(file)
+      filePaths.push(path)
+    })
+
+    ipcRenderer.invoke('upload-dropped-files', filePaths)
+    console.log(filePaths, '上传路径')
+    return Promise.resolve([])
+  },
+
+  getDragFilePath: (file) => {
+    const path = webUtils.getPathForFile(file)
+    return path
+  },
+
+  getAllMedia: () => ipcRenderer.invoke('get-all-media')
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
