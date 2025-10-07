@@ -83,12 +83,12 @@ export async function processMediaFile(filePath: string): Promise<MediaTable | n
       id: newId,
       hashId: hashId,
       name: originalFileName,
+      originalFileName: originalFileName,
       ext: path.extname(filePath),
       width: metadata.width,
       height: metadata.height,
       size: metadata.size || fileBuffer.length,
       time: Date.now(),
-      revisionTime: Date.now(),
       url: `${newOriginalFilePath}`, // 存储复制后原件的本地URL
       thumbnailUrl: `${newThumbnailPath}`, // 存储缩略图文件的本地URL
       isDeleted: 0,

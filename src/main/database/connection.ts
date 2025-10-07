@@ -7,7 +7,7 @@ import path from 'path'
 import { app } from 'electron'
 
 // 数据库文件的存放路径，app.getPath('userData') 是 Electron 推荐的存放用户数据的目录
-const dbPath = path.join(app.getPath('userData'), 'haunshi_el.db')
+const dbPath = path.join(app.getPath('userData'), 'huanshi-el.db')
 
 // 创建 better-sqlite3 数据库实例
 const sqlite = new Database(dbPath)
@@ -20,7 +20,7 @@ const dialect = new SqliteDialect({
 // 创建并导出 Kysely 实例，整个应用将通过它来操作数据库
 // <DB> 泛型参数确保了所有操作都是类型安全的
 export const db = new Kysely<DB>({
-  dialect,
+  dialect
   // log(event) {
   //   // 只在非生产环境下打印日志
   //   // electron-vite 会自动为你设置好 process.env.NODE_ENV
@@ -47,30 +47,99 @@ export const db = new Kysely<DB>({
 
 // 数据库初始化函数
 export function initializeDatabase(): void {
-  // 你的建表语句
-  const createMediaTableSQL = `
-  CREATE TABLE IF NOT EXISTS media
-  (
-    id           TEXT PRIMARY KEY NOT NULL,
-    hashId       TEXT UNIQUE,
-    name         TEXT             NOT NULL,
-    ext          TEXT             NOT NULL,
-    width        INTEGER          NOT NULL,
-    height       INTEGER          NOT NULL,
-    size         INTEGER          NOT NULL,
-    score        INTEGER DEFAULT 0,
-    time         INTEGER          NOT NULL,
-    revisionTime INTEGER          NOT NULL,
-    note         TEXT,
-    url          TEXT,
-    thumbnailUrl TEXT,
-    palettes     TEXT,
-    author       TEXT,
-    comments     TEXT,
-    isDeleted    INTEGER DEFAULT 0
-  );
-`
-  // 直接使用 better-sqlite3 实例来执行初始化的 SQL
-  sqlite.exec(createMediaTableSQL)
-  console.log('数据库初始化成功.')
+  // 使用事务来执行所有的建表语句
+  const initTransaction = sqlite.transaction(() => {
+    // 1. 媒体文件表 (来自你的文件)
+    const createMediaTableSQL = `
+    CREATE TABLE IF NOT EXISTS media
+    (
+      id           TEXT PRIMARY KEY NOT NULL,
+      hashId       TEXT UNIQUE,
+      directoryId  TEXT,
+      name         TEXT NOT NULL,
+      originalFileName TEXT,
+      ext          TEXT NOT NULL,
+      mimeType     TEXT,
+      width        INTEGER NOT NULL,
+      height       INTEGER NOT NULL,
+      size         INTEGER NOT NULL,
+      score        INTEGER DEFAULT 0,
+      time         INTEGER NOT NULL,
+      note         TEXT,
+      url          TEXT,
+      thumbnailUrl TEXT,
+      palettes     TEXT,
+      author       TEXT,
+      comments     TEXT,
+      isDeleted    INTEGER DEFAULT 0,
+      usageCount        INTEGER DEFAULT 0,
+      perceptualHash    TEXT,
+      durationSeconds   REAL DEFAULT 0
+    );
+    `
+    sqlite.exec(createMediaTableSQL)
+
+    // 2. 目录结构表
+    const createDirectoriesTableSQL = `
+    CREATE TABLE IF NOT EXISTS directories
+    (
+      id        TEXT PRIMARY KEY NOT NULL,
+      parentId  TEXT, -- 指向父目录的id, NULL表示根目录
+      name      TEXT NOT NULL,
+      createdAt INTEGER NOT NULL -- 使用Unix时间戳
+    );
+    `
+    sqlite.exec(createDirectoriesTableSQL)
+
+    // 3. 标签表
+    const createTagsTableSQL = `
+    CREATE TABLE IF NOT EXISTS tags
+    (
+      id    TEXT PRIMARY KEY NOT NULL,
+      name  TEXT NOT NULL UNIQUE, -- 标签名唯一
+      color TEXT -- 用于UI显示的颜色
+    );
+    `
+    sqlite.exec(createTagsTableSQL)
+
+    // 4. 媒体与标签的关联表 (多对多关系)
+    const createMediaTagsTableSQL = `
+    CREATE TABLE IF NOT EXISTS mediaTags
+    (
+      mediaId TEXT NOT NULL,
+      tagId   TEXT NOT NULL,
+      PRIMARY KEY (mediaId, tagId) -- 复合主键, 防止重复关联
+    );
+    `
+    sqlite.exec(createMediaTagsTableSQL)
+
+    // 5. 播放历史记录表
+    const createPlaybackHistoryTableSQL = `
+    CREATE TABLE IF NOT EXISTS playbackHistory
+    (
+      id                    TEXT PRIMARY KEY NOT NULL,
+      mediaId               TEXT NOT NULL,
+      playedAt              INTEGER NOT NULL, -- 播放时间点的Unix时间戳
+      durationPlayedSeconds REAL    NOT NULL  -- 本次播放时长(秒)
+    );
+    `
+    sqlite.exec(createPlaybackHistoryTableSQL)
+
+    // 6. 应用设置表 (键值对)
+    const createSettingsTableSQL = `
+    CREATE TABLE IF NOT EXISTS settings
+    (
+      key   TEXT PRIMARY KEY NOT NULL,
+      value TEXT
+    );
+    `
+    sqlite.exec(createSettingsTableSQL)
+  })
+
+  try {
+    initTransaction()
+    console.log('数据库和所有表初始化成功。')
+  } catch (error) {
+    console.error('数据库初始化失败:', error)
+  }
 }

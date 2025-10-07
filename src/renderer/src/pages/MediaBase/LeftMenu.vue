@@ -31,13 +31,13 @@ const value = ref('Apple')
 
 const options = [
   {
-    label: 'Apple',
-    value: 'Apple',
+    label: '所有媒体',
+    value: 'AllMedia',
     icon: Apple
   },
   {
-    label: 'Cherry',
-    value: 'Cherry',
+    label: '未分类',
+    value: 'NotSort',
     icon: Cherry
   },
   {
