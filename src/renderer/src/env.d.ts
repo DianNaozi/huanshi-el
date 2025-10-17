@@ -32,6 +32,7 @@ declare global {
       getDragFilePath: (file) => Promise<string> // 获取拖拽文件路径
       getAllMedia: () => Promise<ImportedMediaFile[]>
     }
+    directoryApi: typeof directoryApi
   }
 }
 
